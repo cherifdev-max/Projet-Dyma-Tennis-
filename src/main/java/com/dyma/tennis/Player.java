@@ -6,5 +6,8 @@ import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 
-public record Player(@NotBlank String firstName, @NotBlank String lastName, @NotBlank @PastOrPresent LocalDate birhdate, @Valid Rank rank) {
+public record Player(@NotBlank String firstName,
+                     @NotBlank String lastName,
+                     @NotBlank @PastOrPresent LocalDate birhdate,
+                     @Valid Rank rank) {
 }

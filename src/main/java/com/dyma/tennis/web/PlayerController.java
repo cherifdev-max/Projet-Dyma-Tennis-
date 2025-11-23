@@ -1,7 +1,9 @@
 package com.dyma.tennis.web;
 
+import com.dyma.tennis.Error;
 import com.dyma.tennis.Player;
-import com.dyma.tennis.PlayerList;
+import com.dyma.tennis.PlayerTosave;
+import com.dyma.tennis.service.PlayerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,19 +12,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Tag(name = "Players API", description = "Tennis Players API")
 @RestController
 @RequestMapping("/players")
 public class PlayerController {
 
+@Autowired
+private PlayerService playerService;
 
     @Operation(summary = "Finds players", description = "Finds players")
     @ApiResponses(value = {
@@ -34,7 +35,7 @@ public class PlayerController {
 
     @GetMapping
     public List<Player> list() {
-        return PlayerList.ALL;
+        return playerService.getAllPlayers();
     }
 
 
@@ -42,13 +43,16 @@ public class PlayerController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "player",
                     content = {@Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = Player.class)))})
+                            array = @ArraySchema(schema = @Schema(implementation = Player.class)))}),
+
+            @ApiResponse(responseCode = "404", description = "Player with specified last name not found",
+                    content = {@Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = Error.class)))})
     })
 
     @GetMapping("/{lastName}")
     public  Player getByLastName(@PathVariable("lastName") String lastName) {
-        return PlayerList.ALL.stream()
-                .filter(player -> lastName.equals(player.lastName())).findFirst().orElseThrow();// Filtre sur le nom de famille
+        return playerService.getPlayerByLastName(lastName);
               
     }
 
@@ -57,11 +61,16 @@ public class PlayerController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Created player",
                     content = {@Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = Player.class)))})
+                            array = @ArraySchema(schema = @Schema(implementation = PlayerTosave.class)))})
+    ,
+            @ApiResponse(responseCode = "404", description = "Player with specified last name Aready exist",
+                    content = {@Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = Error.class)))})
+
     })
     @PostMapping
-    public Player createPlayer (@RequestBody @Valid Player player){
-        return player;
+    public Player createPlayer (@RequestBody @Valid PlayerTosave playerTosave){
+        return playerService.createPlayer(playerTosave);
     }
 
 
@@ -69,11 +78,14 @@ public class PlayerController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "updated a player",
                     content = {@Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = Player.class)))})
+                            array = @ArraySchema(schema = @Schema(implementation = PlayerTosave.class)))}),
+            @ApiResponse(responseCode = "404", description = "Player with specified last name not found",
+                    content = {@Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = Error.class)))})
     })
     @PutMapping
-    public Player updatePlayer (@RequestBody @Valid Player player){
-        return player;
+    public Player updatePlayer (@RequestBody @Valid PlayerTosave playerTosave){
+        return playerService.update(playerTosave);
     }
 
     @Operation(summary = "delete a player", description = "delete a player")
@@ -82,10 +94,11 @@ public class PlayerController {
             )
     })
 
-
+    @ApiResponse(responseCode = "404", description = "Player with specified last name not found",
+            content = {@Content(mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = Error.class)))})
      @DeleteMapping("/{lastName}")
     public void deletePlayerByLastName(@PathVariable("lastName") String lastename){
-
-
+        playerService.delete(lastename);
     }
 }
